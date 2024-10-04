@@ -1,4 +1,5 @@
-import s from "./LoadMoreBtn.module.css"; 
+import s from "./LoadMoreBtn.module.css";
+
 
 
 const LoadMoreBtn = ({ setPage }) => {
@@ -12,5 +13,7 @@ const LoadMoreBtn = ({ setPage }) => {
     </button>
   );
 };
+
+
 
 export default LoadMoreBtn;

@@ -10,7 +10,7 @@ const Loader = () => {
         color="#00BFFF" 
         ariaLabel="loading"
       />
-      <p className={s.loadingText}>Завантаження зображень...</p>
+      <p className={s.loadingText}>Loading pictures...</p>
     </div>
   );
 };
