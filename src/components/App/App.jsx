@@ -1,62 +1,80 @@
-import ContactList from '../ContactList/ContactList';
-import SearchBox from '../SearchBox/SearchBox';
-import ContactForm from '../ContactForm/ContactForm';
-import { useState, useEffect } from 'react';
-import s from './App.module.css';
-import { nanoid } from 'nanoid';
+import { useEffect, useState } from "react";
+import SearchBar from "./components/SearchBar/SearchBar";
+import { fetchImages } from "./services/api";
+import ImageGallery from "./components/ImageGallery/ImageGallery";
+import Loader from "./components/Loader/Loader";
+import ErrorMessage from "./components/ErrorMessage/ErrorMessage";
+import LoadMoreBtn from "./components/LoadMoreBtn/LoadMoreBtn";
+import ImageModal from "./components/ImageModal/ImageModal";
 
 const App = () => {
-  const [contacts, setContacts] = useState(() => {
-    const savedContact = localStorage.getItem('contacts');
-    return savedContact
-      ? JSON.parse(savedContact)
-      : [
-          { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
-          { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
-          { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
-          { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
-        ];
-  });
+  const [images, setImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalImages, setTotalImages] = useState(0);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [modalIsOpen, setIsOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
-    localStorage.setItem('contacts', JSON.stringify(contacts));
-  }, [contacts]);
+    if (!query) return;
 
-  const [filter, setFilter] = useState('');
+    fetchImagesData(query, page);
+  }, [query, page]);
 
-  const addContact = values => {
-    const newContact = {
-      id: nanoid(),
-      name: values.name,
-      number: values.number,
-    };
-    setContacts(prevContacts => [...prevContacts, newContact]);
+  const fetchImagesData = async (query, page) => {
+    setIsLoading(true);
+    setIsError(false);
+
+    try {
+      const { results, total } = await fetchImages(query, page);
+      setImages((prev) => [...prev, ...results]);
+      setTotalImages(total);
+    } catch (error) {
+      console.error("Ошибка при получении изображений:", error);
+      setIsError(true);
+    } finally {
+      setIsLoading(false);
+      setHasSearched(true);
+    }
   };
 
-  const deleteContact = id => {
-    setContacts(contacts.filter(contact => contact.id !== id));
+  const handleSetQuery = (searchValue) => {
+    setQuery(searchValue);
+    resetState(); 
   };
 
-  const filteredContacts = contacts.filter(contact =>
-    contact.name.toLowerCase().includes(filter.toLowerCase())
-  );
+  const resetState = () => {
+    setImages([]);
+    setPage(1);
+  };
 
-  const hanleFilterChange = event => {
-    setFilter(event.target.value);
+  const openModal = (image) => {
+    setSelectedImage(image);
+    setIsOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsOpen(false);
+    setSelectedImage(null);
   };
 
   return (
-    <div className={s.wrapper}>
-      <h1 className={s.title}>
-        Phone<span className={s.span}>book</span>
-      </h1>
-      <ContactForm addContact={addContact} />
-      <SearchBox filter={filter} change={hanleFilterChange} />
-      <ContactList
-        filterContacts={filteredContacts}
-        deleteContact={deleteContact}
+    <>
+      <SearchBar setQuery={handleSetQuery} />
+      <ImageGallery
+        images={images}
+        totalImages={totalImages}
+        hasSearched={hasSearched}
+        openModal={openModal}
       />
-    </div>
+      {isLoading && <Loader />}
+      {isError && <ErrorMessage />}
+      {images.length !== 0 && <LoadMoreBtn setPage={setPage} />}
+      <ImageModal isOpen={modalIsOpen} closeModal={closeModal} image={selectedImage} />
+    </>
   );
 };
 
